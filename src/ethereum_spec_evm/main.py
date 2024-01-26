@@ -97,7 +97,7 @@ def main():
     parser.add_argument("subcommand", type=str)
     parser.add_argument("--state.fork", dest="state_fork", type=str)
     parser.add_argument(
-        "-v", "--version", action="version", version="ethereum-spec-evm 0.0.0"
+        "-v", "--version", action="version", version="ethereum-spec-evm 0.0.1"
     )
 
     (args, _) = parser.parse_known_args()
