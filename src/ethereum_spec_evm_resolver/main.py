@@ -32,8 +32,8 @@ for fork_name in [
         "branch": "master",
     }
 
-data_dir = Path.home() / ".ethereum-spec-evm" / "fork-data"
-config_file = Path.home() / ".ethereum-spec-evm" / "config.json"
+data_dir = Path.home() / ".ethereum-spec-evm-resolver" / "fork-data"
+config_file = Path.home() / ".ethereum-spec-evm-resolver" / "config.json"
 
 
 def setup_data_dir():
@@ -97,7 +97,7 @@ def main():
     parser.add_argument("subcommand", type=str)
     parser.add_argument("--state.fork", dest="state_fork", type=str)
     parser.add_argument(
-        "-v", "--version", action="version", version="ethereum-spec-evm 0.0.1"
+        "-v", "--version", action="version", version="ethereum-spec-evm-resolver 0.0.1"
     )
 
     (args, _) = parser.parse_known_args()
