@@ -108,7 +108,7 @@ def main():
 
     if args.subcommand in ["t8n", "b11r"]:
         if "path" in fork_data:
-            sys.path[:0] = [fork_data["path"]]
+            sys.path[:0] = [str(Path(fork_data["path"]) / "src")]
         else:
             download_fork(args.state_fork, fork_data)
             sys.path[:0] = [str(data_dir / args.state_fork / "src")]
