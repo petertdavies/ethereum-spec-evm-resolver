@@ -7,7 +7,7 @@ from shutil import rmtree
 from filelock import FileLock
 from git import Repo
 
-fork_data = {
+default_fork_data = {
     "Cancun": {
         "url": "https://github.com/ethereum/execution-specs.git",
         "branch": "forks/cancun",
@@ -27,7 +27,7 @@ for fork_name in [
     "Merge",
     "Shanghai",
 ]:
-    fork_data[fork_name] = {
+    default_fork_data[fork_name] = {
         "url": "https://github.com/ethereum/execution-specs.git",
         "branch": "master",
     }
@@ -41,7 +41,7 @@ def setup_data_dir():
         data_dir.mkdir(parents=True)
     if not config_file.exists():
         with config_file.open("w") as fp:
-            json.dump({"Frontier": fork_data["Frontier"]}, fp, indent=4)
+            json.dump({"Frontier": default_fork_data["Frontier"]}, fp, indent=4)
             fp.write("\n")
 
 
@@ -51,7 +51,7 @@ def get_fork_data(fork):
             config = json.load(fp)
             if fork in config:
                 return config[fork]
-    return fork_data[fork]
+    return default_fork_data[fork]
 
 
 def download_fork(fork, data):
@@ -104,8 +104,10 @@ def main():
 
     setup_data_dir()
 
+    fork_data = get_fork_data(args.state_fork)
+
     if args.subcommand in ["t8n", "b11r"]:
-        download_fork(args.state_fork, fork_data[args.state_fork])
+        download_fork(args.state_fork, fork_data)
 
         sys.path[:0] = [str(data_dir / args.state_fork / "src")]
 
@@ -114,4 +116,4 @@ def main():
         sys.exit(main())
     elif args.subcommand == "update":
         (data_dir / (args.state_fork + ".loaded")).unlink(missing_ok=True)
-        download_fork(args.state_fork, fork_data[args.state_fork])
+        download_fork(args.state_fork, fork_data)
