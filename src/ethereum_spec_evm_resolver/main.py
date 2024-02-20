@@ -107,9 +107,11 @@ def main():
     fork_data = get_fork_data(args.state_fork)
 
     if args.subcommand in ["t8n", "b11r"]:
-        download_fork(args.state_fork, fork_data)
-
-        sys.path[:0] = [str(data_dir / args.state_fork / "src")]
+        if "path" in fork_data:
+            sys.path[:0] = [fork_data["path"]]
+        else:
+            download_fork(args.state_fork, fork_data)
+            sys.path[:0] = [str(data_dir / args.state_fork / "src")]
 
         from ethereum_spec_tools.evm_tools import main
 
