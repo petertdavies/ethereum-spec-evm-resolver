@@ -1,3 +1,4 @@
+import os
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -146,8 +147,31 @@ def get_default_resolutions() -> Dict[str, Resolution]:
     return TypeAdapter(Dict[str, Resolution]).validate_python(resolutions)
 
 
-default_resolutions = get_default_resolutions()
+def get_env_resolutions() -> Dict[str, Resolution]:
+    resolutions_string = os.environ.get("EELS_RESOLUTIONS")
+    resolutions_file = os.environ.get("EELS_RESOLUTIONS_FILE")
+    if resolutions_string is not None and resolutions_file is not None:
+        raise Exception(
+            "Only one of EELS_RESOLUTIONS and "
+            + "EELS_RESOLUTIONS_FILE allowed in env vars"
+        )
+    elif resolutions_string is not None:
+        return TypeAdapter(Dict[str, Resolution]).validate_json(resolutions_string)
+    elif resolutions_file is not None:
+        return TypeAdapter(Dict[str, Resolution]).validate_json(
+            Path(resolutions_file).read_text()
+        )
+    else:
+        return {}
 
+
+default_resolutions = get_default_resolutions()
+env_resolutions = get_env_resolutions()
 
 def get_fork_resolution(fork_name: str) -> Resolution:
-    return default_resolutions[fork_name]
+    if fork_name in env_resolutions:
+        return env_resolutions[fork_name]
+    elif fork_name in default_resolutions:
+        return default_resolutions[fork_name]
+    else:
+        raise Exception(f"Unable to resolve fork: {fork_name}")

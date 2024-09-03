@@ -1,28 +1,67 @@
 # Ethereum Spec EVM Resolver
 
-This tool implements the `evm` tool for EELS. The command line options will be
-forwarded to EELS based on the `--state.fork` option. All options are passed
-to EELS verbatim.
+This tool implements the `evm` tool for EELS. It is capable of handling
+requests for different EVM forks even when those forks are implemented by
+different versions of EELS hosted in different places. Forks of EELS are
+downloaded on demand.
 
-Once downloaded the local copy of EELS for each fork will not be updated, but
-a manual update of a fork can be forced using `update`.
+EELS resolver supports two modes of operation:
 
-# Custom forks
+In direct mode (e.g. `ethereum-spec-evm-resolver t8n`), EELS resolver
+will simply pass the entire request onto the relevant EELS fork based on the
+`--state.fork` command line option.
 
-A custom fork can be added to this tool by editing the config file in
-`~/.ethereum-spec-evm-resolver/config.json`. The following keys are accepted:
-* `url`: The url of the git repository containing the fork of EELS.
-* `branch`: The branch (or tag) of the fork.
-* `commit`: The particular commit to checkout, it must be an ancestor of
-`branch`.
+In daemon mode, EELS resolver will spin up a daemon which will listen for
+requests on the Unix domain socket using the `--uds` option. That daemon will
+then manage a fleet of sub-daemons to handle incoming requests.
+
+## Adding custom forks
+
+Support for custom forks can be specified using json config. The json may be
+placed directly in the environment variable `$EELS_RESOLUTIONS` or in the file
+at `$EELS_RESOLUTIONS_FILE`.
+
+### Git resolutions
+
+Git resolutions accept the following keys:
+
+`url`
+: The url of the git repo
+
+`branch`/`tag`
+: The branch or tag to use
+
+`commit` (optional)
+: The specific commit to use (must be an ancestor of
+branch head)
+
+### Local resolutions
+
+Local resolutions only have the `path` key.
+
+`path`
+: path to roots of EELS clone
+
+###  Same as resolutions
+
+Same as resolutions avoid redundancy when one repo contains multiple forks.
+
+`same_as`
+: The fork with that resolves to the same repo.
 
 ## Example config
 ```
 {
-    "Frontier": {
+    "EELSMaster": {
         "url": "https://github.com/ethereum/execution-specs.git",
         "branch": "master"
-    }
+    },
+    "Frontier": {
+        "same_as": "EELSMaster"
+    },
+    "LocalFork": {
+        "path": "/path/to/eels/fork"
+    }    
 }
 ```
 
