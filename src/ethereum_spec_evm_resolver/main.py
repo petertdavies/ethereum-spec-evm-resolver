@@ -46,5 +46,4 @@ def main():
 
             sys.exit(main_())
     elif args.subcommand == "daemon":
-        print(args.uds)
         Daemon(args.uds).run()
