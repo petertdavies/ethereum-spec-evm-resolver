@@ -6,9 +6,11 @@ import sys
 import time
 from http.server import BaseHTTPRequestHandler
 from pathlib import Path
+import signal
 from socket import socket
 from threading import Thread
-from typing import Any, Optional, Tuple, Union
+from time import sleep
+from typing import Any, Optional, Tuple, Union, List
 
 from platformdirs import user_runtime_dir
 from requests_unixsocket import Session
@@ -43,6 +45,7 @@ class _EvmToolHandler(BaseHTTPRequestHandler):
 
 class _UnixSocketHttpServer(socketserver.UnixStreamServer):
     last_response: Optional[float] = None
+    processes: List[subprocess.Popen]
 
     def __init__(self, *args, **kwargs):
         runtime_dir.mkdir(parents=True, exist_ok=True)
@@ -94,6 +97,13 @@ class _UnixSocketHttpServer(socketserver.UnixStreamServer):
             self.running_daemons.add(fork)
             time.sleep(1)
 
+    def kill_subprocesses(self):
+        for process in self.processes:
+            process.terminate()
+        sleep(1)
+        for process in self.processes:
+            process.kill()
+
 
 class Daemon:
     """
@@ -104,6 +114,9 @@ class Daemon:
         self.uds = uds
 
     def _run(self) -> int:
+        # Perform cleanup when receiving SIGTERM
+        signal.signal(signal.SIGTERM, lambda x, y: sys.exit())
+
         try:
             os.remove(self.uds)
         except IOError:
@@ -114,7 +127,10 @@ class Daemon:
             timer = Thread(target=server.check_timeout, daemon=True)
             timer.start()
 
-            server.serve_forever()
+            try:
+                server.serve_forever()
+            finally:
+                server.kill_subprocesses()
 
         return 0
 
