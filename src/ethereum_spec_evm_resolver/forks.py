@@ -74,7 +74,7 @@ class GitResolution(BaseModel):
             except (FileNotFoundError, ValidationError):
                 pass
             if fork_dir.exists():
-                fork_dir.rmdir()
+                rmtree(fork_dir)
             if self.commit is None:
                 repo = Repo.clone_from(
                     str(self.git_url),
