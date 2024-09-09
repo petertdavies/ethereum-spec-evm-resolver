@@ -25,7 +25,7 @@ at `$EELS_RESOLUTIONS_FILE`.
 
 Git resolutions accept the following keys:
 
-`url`
+`git_url`
 : The url of the git repo
 
 `branch`/`tag`
@@ -53,7 +53,7 @@ Same as resolutions avoid redundancy when one repo contains multiple forks.
 ```
 {
     "EELSMaster": {
-        "url": "https://github.com/ethereum/execution-specs.git",
+        "git_url": "https://github.com/ethereum/execution-specs.git",
         "branch": "master"
     },
     "Frontier": {
