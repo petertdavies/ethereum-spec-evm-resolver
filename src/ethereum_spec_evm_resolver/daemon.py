@@ -21,6 +21,10 @@ runtime_dir = Path(user_runtime_dir("ethereum-spec-evm-resolver"))
 
 
 class _EvmToolHandler(BaseHTTPRequestHandler):
+    def log_request(self, *args):
+        """Don't log requests"""
+        pass
+
     def do_POST(self) -> None:
         content_length = int(self.headers["Content-Length"])
         content_bytes = self.rfile.read(content_length)
