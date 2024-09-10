@@ -66,7 +66,7 @@ class GitResolution(BaseModel):
                 if self == info.resolution:
                     if self.commit is not None or datetime.now(
                         tz=timezone.utc
-                    ) - info.timestamp > timedelta(hours=RELOAD_CHECK_HOURS):
+                    ) - info.timestamp < timedelta(hours=RELOAD_CHECK_HOURS):
                         return ResolutionInfo(path=fork_dir)
                 if self.commit is None:
                     if self.get_remote_head() == info.head:
