@@ -70,6 +70,8 @@ class GitResolution(BaseModel):
                         return ResolutionInfo(path=fork_dir)
                 if self.commit is None:
                     if self.get_remote_head() == info.head:
+                        info.timestamp = datetime.now(tz=timezone.utc)
+                        info_file.write_text(info.model_dump_json())
                         return ResolutionInfo(path=fork_dir)
             except (FileNotFoundError, ValidationError):
                 pass
