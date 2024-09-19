@@ -99,7 +99,13 @@ class _UnixSocketHttpServer(socketserver.UnixStreamServer):
                 )
             )
             self.running_daemons.add(fork)
-            time.sleep(1)
+            wait_time = .1
+            while not uds_path.exists():
+                time.sleep(wait_time)
+                if wait_time > 100:
+                    raise Exception("Sub-daemon taking excessively long to open unix socket")
+                wait_time *= wait_time
+            time.sleep(wait_time*20 + 1)
 
     def kill_subprocesses(self):
         for process in self.processes:
