@@ -73,7 +73,7 @@ class GitResolution(BaseModel):
                         return ResolutionInfo(path=fork_dir)
             except (FileNotFoundError, ValidationError):
                 pass
-            info_file.unlink()
+            info_file.unlink(missing_ok=True)
             if fork_dir.exists():
                 rmtree(fork_dir)
             if self.commit is None:
