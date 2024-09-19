@@ -38,9 +38,9 @@ class _EvmToolHandler(BaseHTTPRequestHandler):
         replaced_str = str(socket_path).replace("/", "%2F")
         self.server_url = f"http+unix://{replaced_str}/"
 
-        response = Session().post(self.server_url, json=content, timeout=60)
+        response = Session().post(self.server_url, json=content, timeout=(60, 300))
 
-        self.send_response(200)
+        self.send_response(response.status_code)
         self.send_header("Content-type", "application/octet-stream")
         self.end_headers()
 
