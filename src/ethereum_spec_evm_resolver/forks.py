@@ -171,6 +171,7 @@ def get_env_resolutions() -> Dict[str, Resolution]:
 default_resolutions = get_default_resolutions()
 env_resolutions = get_env_resolutions()
 
+
 def get_fork_resolution(fork_name: str) -> Resolution:
     if fork_name in env_resolutions:
         return env_resolutions[fork_name]
