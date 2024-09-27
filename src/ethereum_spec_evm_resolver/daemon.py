@@ -1,19 +1,21 @@
 import json
 import os
+import signal
 import socketserver
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from http.server import BaseHTTPRequestHandler
 from pathlib import Path
-import signal
 from socket import socket
 from threading import Thread
 from time import sleep
-from typing import Any, Optional, Tuple, Union, List
+from typing import Any, List, Optional, Tuple, Union
 
 from platformdirs import user_runtime_dir
+from requests.exceptions import ConnectionError
 from requests_unixsocket import Session
 
 from .forks import get_fork_resolution
@@ -35,11 +37,9 @@ class _EvmToolHandler(BaseHTTPRequestHandler):
 
         self.server.spawn_subserver(fork)
 
-        socket_path = runtime_dir / (fork + "." + str(os.getpid()) + ".sock")
-        replaced_str = str(socket_path).replace("/", "%2F")
-        self.server_url = f"http+unix://{replaced_str}/"
-
-        response = Session().post(self.server_url, json=content, timeout=(60, 300))
+        response = Session().post(
+            self.server.get_subserver_url(fork), json=content, timeout=(60, 300)
+        )
 
         self.send_response(response.status_code)
         self.send_header("Content-type", "application/octet-stream")
@@ -56,7 +56,14 @@ class _UnixSocketHttpServer(socketserver.UnixStreamServer):
         runtime_dir.mkdir(parents=True, exist_ok=True)
         self.running_daemons = set()
         self.processes = []
+        self.lock = threading.Lock()
         super().__init__(*args, **kwargs)
+
+    @staticmethod
+    def get_subserver_url(fork: str):
+        socket_path = runtime_dir / (fork + "." + str(os.getpid()) + ".sock")
+        replaced_str = str(socket_path).replace("/", "%2F")
+        return f"http+unix://{replaced_str}/"
 
     def get_request(self) -> Tuple[Any, Any]:
         request, client_address = super().get_request()
@@ -82,31 +89,40 @@ class _UnixSocketHttpServer(socketserver.UnixStreamServer):
                 break
 
     def spawn_subserver(self, fork):
-        if fork not in self.running_daemons:
-            get_fork_resolution(fork).resolve(fork)
+        with self.lock:
+            if fork not in self.running_daemons:
+                get_fork_resolution(fork).resolve(fork)
 
-            uds_path = runtime_dir / (fork + "." + str(os.getpid()) + ".sock")
-            self.processes.append(
-                subprocess.Popen(
-                    args=[
-                        sys.argv[0],
-                        "spawn-daemon",
-                        "--state.fork",
-                        fork,
-                        "--uds",
-                        str(uds_path),
-                        "--timeout=0",
-                    ]
+                uds_path = runtime_dir / (fork + "." + str(os.getpid()) + ".sock")
+                self.processes.append(
+                    subprocess.Popen(
+                        args=[
+                            sys.argv[0],
+                            "spawn-daemon",
+                            "--state.fork",
+                            fork,
+                            "--uds",
+                            str(uds_path),
+                            "--timeout=0",
+                        ]
+                    )
                 )
-            )
-            self.running_daemons.add(fork)
-            wait_time = .1
-            while not uds_path.exists():
-                time.sleep(wait_time)
-                if wait_time > 100:
-                    raise Exception("Sub-daemon taking excessively long to open unix socket")
-                wait_time *= wait_time
-            time.sleep(wait_time*20 + 1)
+                self.running_daemons.add(fork)
+                wait_time = 0.1
+                while not uds_path.exists():
+                    wait_time *= 2
+                    time.sleep(wait_time)
+                    if wait_time > 100:
+                        raise Exception(
+                            "Sub-daemon taking excessively long to open unix socket"
+                        )
+                while True:
+                    try:
+                        Session().get(self.get_subserver_url(fork) + "heartbeat/")
+                        break
+                    except ConnectionError:
+                        time.sleep(wait_time)
+                        wait_time *= 2
 
     def kill_subprocesses(self):
         for process in self.processes:
