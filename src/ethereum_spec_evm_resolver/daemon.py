@@ -4,6 +4,7 @@ import signal
 import socketserver
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 from http.server import BaseHTTPRequestHandler
@@ -19,7 +20,7 @@ from requests_unixsocket import Session
 
 from .forks import get_fork_resolution
 
-runtime_dir = Path(user_runtime_dir("ethereum-spec-evm-resolver"))
+runtime_dir = Path(tempfile.TemporaryDirectory().name)
 
 
 class _EvmToolHandler(BaseHTTPRequestHandler):
