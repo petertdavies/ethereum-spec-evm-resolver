@@ -4,6 +4,7 @@ import signal
 import socketserver
 import subprocess
 import sys
+import threading
 import time
 from http.server import BaseHTTPRequestHandler
 from pathlib import Path
@@ -54,6 +55,7 @@ class _UnixSocketHttpServer(socketserver.UnixStreamServer):
         runtime_dir.mkdir(parents=True, exist_ok=True)
         self.running_daemons = set()
         self.processes = []
+        self.lock = threading.Lock()
         super().__init__(*args, **kwargs)
 
     @staticmethod
@@ -86,39 +88,40 @@ class _UnixSocketHttpServer(socketserver.UnixStreamServer):
                 break
 
     def spawn_subserver(self, fork):
-        if fork not in self.running_daemons:
-            get_fork_resolution(fork).resolve(fork)
+        with self.lock:
+            if fork not in self.running_daemons:
+                get_fork_resolution(fork).resolve(fork)
 
-            uds_path = runtime_dir / (fork + "." + str(os.getpid()) + ".sock")
-            self.processes.append(
-                subprocess.Popen(
-                    args=[
-                        sys.argv[0],
-                        "spawn-daemon",
-                        "--state.fork",
-                        fork,
-                        "--uds",
-                        str(uds_path),
-                        "--timeout=0",
-                    ]
-                )
-            )
-            self.running_daemons.add(fork)
-            wait_time = 0.1
-            while not uds_path.exists():
-                wait_time *= 2
-                time.sleep(wait_time)
-                if wait_time > 100:
-                    raise Exception(
-                        "Sub-daemon taking excessively long to open unix socket"
+                uds_path = runtime_dir / (fork + "." + str(os.getpid()) + ".sock")
+                self.processes.append(
+                    subprocess.Popen(
+                        args=[
+                            sys.argv[0],
+                            "spawn-daemon",
+                            "--state.fork",
+                            fork,
+                            "--uds",
+                            str(uds_path),
+                            "--timeout=0",
+                        ]
                     )
-            while True:
-                try:
-                    Session().get(self.get_subserver_url(fork) + "heartbeat/")
-                    break
-                except ConnectionError:
-                    time.sleep(wait_time)
+                )
+                self.running_daemons.add(fork)
+                wait_time = 0.1
+                while not uds_path.exists():
                     wait_time *= 2
+                    time.sleep(wait_time)
+                    if wait_time > 100:
+                        raise Exception(
+                            "Sub-daemon taking excessively long to open unix socket"
+                        )
+                while True:
+                    try:
+                        Session().get(self.get_subserver_url(fork) + "heartbeat/")
+                        break
+                    except ConnectionError:
+                        time.sleep(wait_time)
+                        wait_time *= 2
 
     def kill_subprocesses(self):
         for process in self.processes:
