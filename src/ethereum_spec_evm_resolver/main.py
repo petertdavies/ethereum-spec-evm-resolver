@@ -5,11 +5,24 @@ from pathlib import Path
 import platformdirs
 
 from .daemon import Daemon as Daemon
-from .forks import get_default_resolutions, get_fork_resolution
+from .forks import (
+    get_default_resolutions,
+    get_env_resolutions,
+    get_fork_resolution,
+)
 
 
 def main():
-    supported_forks = "\n".join(get_default_resolutions().keys())
+    supported_forks_resolutions = {}
+    try:
+        # First try to get the resolutions from the environment
+        supported_forks_resolutions = get_env_resolutions()
+    except Exception:
+        pass
+    if not supported_forks_resolutions:
+        # If the environment does not have the resolutions, use the defaults
+        supported_forks_resolutions = get_default_resolutions()
+    supported_forks = "\n".join(supported_forks_resolutions.keys())
     epilog = "Supported Forks:\n" + supported_forks
 
     parser = argparse.ArgumentParser(
