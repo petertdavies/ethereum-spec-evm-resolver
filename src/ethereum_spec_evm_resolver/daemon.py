@@ -13,6 +13,7 @@ from socket import socket
 from threading import Thread
 from time import sleep
 from typing import Any, List, Optional, Tuple, Union
+from urllib.parse import urlunparse, quote, urlparse
 
 from platformdirs import user_runtime_dir
 from requests.exceptions import ConnectionError
@@ -38,7 +39,9 @@ class _EvmToolHandler(BaseHTTPRequestHandler):
         self.server.spawn_subserver(fork)
 
         response = Session().post(
-            self.server.get_subserver_url(fork), json=content, timeout=(60, 300)
+            self.server.get_subserver_url(self.path, fork),
+            json=content,
+            timeout=(60, 300),
         )
 
         self.send_response(response.status_code)
@@ -60,10 +63,14 @@ class _UnixSocketHttpServer(socketserver.UnixStreamServer):
         super().__init__(*args, **kwargs)
 
     @staticmethod
-    def get_subserver_url(fork: str):
+    def get_subserver_url(path: str, fork: str):
         socket_path = runtime_dir / (fork + "." + str(os.getpid()) + ".sock")
-        replaced_str = str(socket_path).replace("/", "%2F")
-        return f"http+unix://{replaced_str}/"
+        quoted_str = quote(str(socket_path), safe="")
+
+        parsed = urlparse(path)
+        parsed = parsed._replace(scheme="http+unix", netloc=quoted_str)
+
+        return urlunparse(parsed)
 
     def get_request(self) -> Tuple[Any, Any]:
         request, client_address = super().get_request()
@@ -118,7 +125,7 @@ class _UnixSocketHttpServer(socketserver.UnixStreamServer):
                         )
                 while True:
                     try:
-                        Session().get(self.get_subserver_url(fork) + "heartbeat/")
+                        Session().get(self.get_subserver_url("/heartbeat/", fork))
                         break
                     except ConnectionError:
                         time.sleep(wait_time)
