@@ -2,6 +2,8 @@ import argparse
 import sys
 from pathlib import Path
 
+from ethereum_spec_evm_resolver import __version__
+
 import platformdirs
 
 from .daemon import Daemon as Daemon
@@ -35,7 +37,7 @@ def main():
         "-v",
         "--version",
         action="version",
-        version="ethereum-spec-evm-resolver 0.0.1",
+        version=f"ethereum-spec-evm-resolver {__version__}",
     )
 
     (args, _) = parser.parse_known_args()

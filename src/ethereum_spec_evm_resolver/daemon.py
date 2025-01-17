@@ -15,7 +15,6 @@ from time import sleep
 from typing import Any, List, Optional, Tuple, Union
 from urllib.parse import urlunparse, quote, urlparse
 
-from platformdirs import user_runtime_dir
 from requests.exceptions import ConnectionError
 from requests_unixsocket import Session
 

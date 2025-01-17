@@ -59,7 +59,6 @@ class GitResolution(BaseModel):
         fork_dir = data_dir / fork_name
         lock = FileLock(data_dir / (fork_name + ".lock"))
         info_file = data_dir / (fork_name + ".info")
-
         with lock:
             try:
                 info = GitResolutionInfo.model_validate_json(info_file.read_text())
