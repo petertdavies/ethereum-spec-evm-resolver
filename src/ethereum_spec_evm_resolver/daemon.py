@@ -18,7 +18,11 @@ from urllib.parse import urlunparse, quote, urlparse
 from requests.exceptions import ConnectionError
 from requests_unixsocket import Session
 
-from .forks import get_fork_resolution
+from .forks import (
+    get_fork_resolution,
+    get_fork_resolution_info,
+)
+
 
 runtime_dir = Path(tempfile.TemporaryDirectory().name)
 
@@ -47,7 +51,11 @@ class _EvmToolHandler(BaseHTTPRequestHandler):
         self.send_header("Content-type", "application/octet-stream")
         self.end_headers()
 
-        self.wfile.write(response.text.encode("utf-8"))
+        response_json = response.json()
+        response_json["_info_metadata"] = {
+            "eels-resolution": get_fork_resolution_info(fork),
+        }
+        self.wfile.write(json.dumps(response_json).encode("utf-8"))
 
 
 class _UnixSocketHttpServer(socketserver.UnixStreamServer):
