@@ -1,4 +1,4 @@
-from importlib_metadata import version
+from importlib.metadata import version
 
 __version__ = version("ethereum_spec_evm_resolver")
 
