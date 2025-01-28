@@ -59,7 +59,6 @@ class GitResolution(BaseModel):
         fork_dir = data_dir / fork_name
         lock = FileLock(data_dir / (fork_name + ".lock"))
         info_file = data_dir / (fork_name + ".info")
-
         with lock:
             try:
                 info = GitResolutionInfo.model_validate_json(info_file.read_text())
@@ -179,3 +178,20 @@ def get_fork_resolution(fork_name: str) -> Resolution:
         return default_resolutions[fork_name]
     else:
         raise Exception(f"Unable to resolve fork: {fork_name}")
+
+
+def get_fork_resolution_info(fork: str) -> Dict[str, str]:
+    fork_resolution = get_fork_resolution(fork)
+    try:
+        resolver_path = Path(platformdirs.user_cache_dir("ethereum-spec-evm-resolver"))
+        info_file = resolver_path / (f"{fork}.info")
+        git_resolution_info = GitResolutionInfo.model_validate_json(
+            info_file.read_text()
+        )
+        return {
+            "git-url": str(git_resolution_info.resolution.git_url),
+            "branch": git_resolution_info.resolution.branch,
+            "commit": git_resolution_info.resolution.commit or git_resolution_info.head,
+        }
+    except (FileNotFoundError, ValueError):
+        return {"path": str(fork_resolution.path)}
