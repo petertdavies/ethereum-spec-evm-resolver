@@ -17,14 +17,14 @@ from urllib.parse import urlunparse, quote, urlparse
 
 from requests.exceptions import ConnectionError
 from requests_unixsocket import Session
-
+from .error_silencer import apply_benign_error_silencer
 from .forks import (
     get_fork_resolution,
     get_fork_resolution_info,
 )
 
-
 runtime_dir = Path(tempfile.TemporaryDirectory().name)
+apply_benign_error_silencer()
 
 
 class _EvmToolHandler(BaseHTTPRequestHandler):
