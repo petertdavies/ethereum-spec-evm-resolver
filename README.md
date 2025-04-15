@@ -42,7 +42,7 @@ Local resolutions only have the `path` key.
 `path`
 : path to the project root of an `execution-specs` repository (not to the fork sub-folder).
 
-###  Same as resolutions
+### Same as resolutions
 
 Same as resolutions avoid redundancy when one repo contains multiple forks.
 
@@ -50,7 +50,8 @@ Same as resolutions avoid redundancy when one repo contains multiple forks.
 : The fork with that resolves to the same repo.
 
 ## Example config
-```
+
+```json
 {
     "EELSMaster": {
         "git_url": "https://github.com/ethereum/execution-specs.git",
@@ -65,3 +66,18 @@ Same as resolutions avoid redundancy when one repo contains multiple forks.
 }
 ```
 
+## Example `EELS_RESOLUTIONS` Usage
+
+Setting resolutions via `EELS_RESOLUTIONS` will take precedent over an resolutions file, `eels_resolutions.json`:
+
+Fish:
+
+```shell
+set -x EELS_RESOLUTIONS '{"Prague": {"path": "/path/to/forked/execution-specs/"}}'
+```
+
+Bash:
+
+```bash
+export EELS_RESOLUTIONS='{"Prague": {"path": "/path/to/forked/execution-specs/"}}'
+```
