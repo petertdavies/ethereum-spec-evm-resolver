@@ -30,9 +30,11 @@ class ResolutionInfo(BaseModel):
 
 
 class LocalResolution(BaseModel):
-    path: str
+    path: Path
 
     def resolve(self, fork_name) -> ResolutionInfo:
+        if not self.path.exists():
+            raise Exception(f"Path {self.path} specified for fork '{fork_name}' does not exist")
         return ResolutionInfo(path=self.path)
 
 
