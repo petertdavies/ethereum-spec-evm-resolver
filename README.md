@@ -40,7 +40,7 @@ branch head)
 Local resolutions only have the `path` key.
 
 `path`
-: path to roots of EELS clone
+: path to the project root of an `execution-specs` repository (not to the fork sub-folder).
 
 ###  Same as resolutions
 
@@ -60,7 +60,7 @@ Same as resolutions avoid redundancy when one repo contains multiple forks.
         "same_as": "EELSMaster"
     },
     "LocalFork": {
-        "path": "/path/to/eels/fork"
+        "path": "/path/to/forked/execution-specs/"
     }    
 }
 ```
