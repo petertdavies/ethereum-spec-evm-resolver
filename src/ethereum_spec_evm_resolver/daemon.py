@@ -38,13 +38,14 @@ class _EvmToolHandler(BaseHTTPRequestHandler):
         content = json.loads(content_bytes)
 
         fork = content["state"]["fork"]
+        timeout = content.get("timeout", 300)
 
         self.server.spawn_subserver(fork)
 
         response = Session().post(
             self.server.get_subserver_url(self.path, fork),
             json=content,
-            timeout=(60, 300),
+            timeout=(60, timeout),
         )
 
         self.send_response(response.status_code)
@@ -60,7 +61,9 @@ class _EvmToolHandler(BaseHTTPRequestHandler):
 
 class _UnixSocketHttpServer(socketserver.UnixStreamServer):
     last_response: Optional[float] = None
+    running_request: bool = False
     processes: List[subprocess.Popen]
+    max_inactivity_time: float = 60.0
 
     def __init__(self, *args, **kwargs):
         runtime_dir.mkdir(parents=True, exist_ok=True)
@@ -87,18 +90,20 @@ class _UnixSocketHttpServer(socketserver.UnixStreamServer):
         self, request: Union[socket, Tuple[bytes, socket]], client_address: Any
     ) -> None:
         try:
+            self.running_request = True
             super().finish_request(request, client_address)
         finally:
             self.last_response = time.monotonic()
+            self.running_request = False
 
-    def check_timeout(self) -> None:
+    def check_inactivity(self) -> None:
         while True:
             time.sleep(11.0)
             now = time.monotonic()
             last_response = self.last_response
             if last_response is None:
                 self.last_response = now
-            elif now - last_response > 60.0:
+            elif now - last_response > self.max_inactivity_time and not self.running_request:
                 self.shutdown()
                 break
 
@@ -165,7 +170,7 @@ class Daemon:
 
         with _UnixSocketHttpServer(self.uds, _EvmToolHandler) as server:
             server.timeout = 7.0
-            timer = Thread(target=server.check_timeout, daemon=True)
+            timer = Thread(target=server.check_inactivity, daemon=True)
             timer.start()
 
             try:
